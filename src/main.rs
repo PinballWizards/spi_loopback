@@ -7,6 +7,9 @@ extern crate embedded_hal;
 extern crate feather_m0 as hal;
 extern crate panic_halt;
 
+#[macro_use(block)]
+extern crate nb;
+
 use hal::clock::GenericClockController;
 use hal::pac::{CorePeripherals, Peripherals};
 use hal::prelude::*;
@@ -25,8 +28,11 @@ fn main() -> ! {
         &mut peripherals.SYSCTRL,
         &mut peripherals.NVMCTRL,
     );
+    let mut delay = hal::delay::Delay::new(core.SYST, &mut clocks);
     let mut pins = hal::Pins::new(peripherals.PORT);
-    let d13 = pins.d13.into_open_drain_output(&mut pins.port);
+    let d13 = pins.d13.into_push_pull_output(&mut pins.port);
+    let mut d6 = pins.d6.into_push_pull_output(&mut pins.port);
+    d6.set_low().unwrap();
 
     let raw_spi3_master = spi::spi_master3(
         &mut clocks,
@@ -41,9 +47,16 @@ fn main() -> ! {
 
     let data = &[5];
 
-    let mut spi3_master = spi::SPI::new(raw_spi3_master, d13);
+    let mut spi3_master = spi::SPI::new(raw_spi3_master, d13);    
 
-    spi3_master.send(data).unwrap();
-
-    loop {}
+    loop {
+        delay.delay_ms(1000u32);
+        block!(spi3_master.send(data)).unwrap();
+        let result = block!(spi3_master.read()).unwrap();
+        if result == data[0] {
+            d6.set_low().unwrap();
+        } else {
+            d6.set_high().unwrap();
+        }
+    }
 }
