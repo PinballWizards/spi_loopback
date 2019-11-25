@@ -47,7 +47,7 @@ fn main() -> ! {
 
     let data = &[5];
 
-    let mut spi3_master = spi::SPI::new(raw_spi3_master, d13);    
+    let mut spi3_master = spi::SPI::new(raw_spi3_master, d13);
 
     loop {
         delay.delay_ms(1000u32);

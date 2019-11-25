@@ -19,13 +19,15 @@ impl<T, SS> SPI<T, SS>
 where
     T: embedded_hal::spi::FullDuplex<u8>,
     SS: OutputPin,
-    <SS as OutputPin>::Error : core::fmt::Debug
+    <SS as OutputPin>::Error: core::fmt::Debug,
 {
     pub fn new(spi_master: T, mut slave_select: SS) -> SPI<T, SS> {
-        slave_select.set_low().expect("could not control slave select");
+        slave_select
+            .set_low()
+            .expect("could not control slave select");
         Self {
             spi_master,
-            slave_select
+            slave_select,
         }
     }
 
@@ -35,13 +37,13 @@ where
     }
 
     pub fn send(&mut self, data: &[u8]) -> nb::Result<(), T::Error> {
-        data.iter().map(|v| {
-            self.spi_master.send(*v)
-        }).collect()
+        data.iter().map(|v| self.spi_master.send(*v)).collect()
     }
 
     pub fn free(mut self) -> (T, SS) {
-        self.slave_select.set_high().expect("could not control slave select");
+        self.slave_select
+            .set_high()
+            .expect("could not control slave select");
         (self.spi_master, self.slave_select)
     }
 }
