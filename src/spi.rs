@@ -1,4 +1,4 @@
-use core::iter::Iterator;
+use core::iter::{FromIterator, Iterator};
 
 use nb;
 
@@ -9,6 +9,7 @@ use hal::sercom::*;
 use hal::time::*;
 
 use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::spi::FullDuplex;
 
 pub struct SPI<T, SS> {
     spi_master: T,
@@ -17,7 +18,7 @@ pub struct SPI<T, SS> {
 
 impl<T, SS> SPI<T, SS>
 where
-    T: embedded_hal::spi::FullDuplex<u8>,
+    T: FullDuplex<u8>,
     SS: OutputPin,
     <SS as OutputPin>::Error: core::fmt::Debug,
 {
@@ -31,13 +32,13 @@ where
         }
     }
 
-    pub fn read(&mut self) -> nb::Result<u8, T::Error> {
-        let ret = self.spi_master.read();
-        ret
+    pub fn read(&mut self) -> Result<u8, T::Error> {
+        block!(self.spi_master.read())
     }
 
-    pub fn send(&mut self, data: &[u8]) -> nb::Result<(), T::Error> {
-        data.iter().map(|v| self.spi_master.send(*v)).collect()
+    pub fn send(&mut self, data: &[u8]) -> Result<(), <T as FullDuplex<u8>>::Error> {
+        data.iter()
+            .try_for_each(|v| block!(self.spi_master.send(*v)))
     }
 
     pub fn free(mut self) -> (T, SS) {
