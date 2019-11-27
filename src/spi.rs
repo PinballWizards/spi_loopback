@@ -1,6 +1,4 @@
-use core::iter::{FromIterator, Iterator};
-
-use nb;
+use core::iter::Iterator;
 
 use hal::clock::GenericClockController;
 use hal::gpio::*;
