@@ -16,6 +16,7 @@ use hal::prelude::*;
 
 use hal::entry;
 
+mod mcp2517;
 mod spi;
 
 #[entry]
