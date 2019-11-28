@@ -10,13 +10,16 @@ extern crate panic_halt;
 #[macro_use(block)]
 extern crate nb;
 
+#[macro_use]
+extern crate bitfield;
+
 use hal::clock::GenericClockController;
 use hal::pac::{CorePeripherals, Peripherals};
 use hal::prelude::*;
 
 use hal::entry;
 
-mod mcp2517;
+pub mod mcp2517;
 mod spi;
 
 #[entry]
@@ -59,7 +62,7 @@ fn main() -> ! {
     let data = &[5];
 
     let mut spi3_master = spi::SPI::new(raw_spi_master, d6);
-    //spi3_master.free();
+    // spi3_master.free();
 
     loop {
         delay.delay_ms(1000u32);

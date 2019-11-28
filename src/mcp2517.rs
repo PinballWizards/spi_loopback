@@ -1,11 +1,18 @@
-pub mod spi {
-    use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin};
-    use embedded_hal::spi::FullDuplex;
+pub mod generic {
+    use bitfield::*;
+    bitfield! {
+        pub struct Instruction(u16);
+        impl Debug;
+        u16;
+        pub op_code, set_op_code: 15, 12;
+        pub address, set_address: 10, 0;
+    }
 
-    enum OpCodes {
-        Reset = 0b0000,
-        ReadSFR = 0b0011,
-        WriteSFR = 0b0010,
+    pub struct OpCode;
+    impl OpCode {
+        pub const Reset: u16 = 0b0000 << 12;
+        pub const ReadSFR: u16 = 0b0011 << 12;
+        pub const WriteSFR: u16 = 0b0010 << 12;
     }
 
     pub enum SFRAddress {
@@ -268,6 +275,72 @@ pub mod spi {
         C1MASK31 = 0x2EC,
     }
 
+    const MessageIdentifierMask: u16 = 0b0000_0111_1111_1111;
+    pub enum MessageIdentifier {
+        Solenoid = 0x0,
+    }
+
+    bitfield! {
+        pub struct TransmitMessageHeader([u8]);
+        impl Debug;
+        u8;
+        // T0
+        u16, standard_identifier, set_standard_identifier: 10, 0;
+        u32, extended_identifier, set_extended_identifier: 28, 10;
+        sid11, _: 29, 29;
+        // T1
+        pub data_length_code, set_data_length_code: 35, 32;
+        pub identifier_extension, _: 36;
+        pub remote_transmission_request, _: 37;
+        pub bit_rate_switched, _: 38;
+        pub fd_frame, _: 39;
+        pub error_status_indicator, _: 40;
+        pub sequence, set_sequence: 47, 41;
+    }
+
+    impl TransmitMessageHeader<[u8; 2]> {
+        pub fn new(identifier: MessageIdentifier) -> Self {
+            let mut msg = TransmitMessageHeader([0; 2]);
+            msg.set_standard_identifier((identifier as u16) & MessageIdentifierMask);
+            msg
+        }
+    }
+
+    bitfield! {
+        pub struct ReceiveMessageHeader([u8]);
+        impl Debug;
+        u8;
+        // T0
+        pub u16, standard_identifier, set_standard_identifier: 10, 0;
+        pub u32, extended_identifier, set_extended_identifier: 28, 10;
+        sid11, _: 29, 29;
+        // T1
+        pub data_length_code, set_data_length_code: 35, 32;
+        pub identifier_extension, _: 36;
+        pub remote_transmission_request, _: 37;
+        pub bit_rate_switched, _: 38;
+        pub fd_frame, _: 39;
+        pub error_status_indicator, _: 40;
+        pub filter_hit, _: 47, 43;
+        // T2
+        pub u32, timestamp, _: 95, 64;
+    }
+
+    impl ReceiveMessageHeader<[u8; 3]> {
+        pub fn new(identifier: MessageIdentifier) -> Self {
+            let mut msg = ReceiveMessageHeader([0; 3]);
+            msg.set_standard_identifier((identifier as u16) & MessageIdentifierMask);
+            msg
+        }
+    }
+}
+
+pub mod spi {
+    use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin};
+    use embedded_hal::spi::FullDuplex;
+
+    use super::generic::*;
+
     pub struct Controller<T, SS> {
         spi_master: T,
         slave_select: SS,
@@ -297,8 +370,8 @@ pub mod spi {
         pub fn reset(&mut self) -> Result<(), T::Error> {
             self.ready_slave_select();
 
-            let instruction: u16 = (OpCodes::Reset as u16) << 12;
-            match self.send(&instruction.to_be_bytes()) {
+            let instruction = Instruction(OpCode::Reset);
+            match self.send(&instruction.0.to_be_bytes()) {
                 Ok(_) => Ok(()),
                 Err(err) => {
                     self.slave_select.set_low().unwrap();
@@ -309,10 +382,9 @@ pub mod spi {
 
         pub fn read_sfr(&mut self, address: SFRAddress) -> Result<u32, T::Error> {
             self.ready_slave_select();
-            let mut instruction: u16 = 0;
-            instruction |= (OpCodes::ReadSFR as u16) << 12;
-            instruction |= address as u16;
-            match self.send(&instruction.to_be_bytes()) {
+            let mut instruction = Instruction(OpCode::ReadSFR);
+            instruction.set_address(address as u16);
+            match self.send(&instruction.0.to_be_bytes()) {
                 Ok(_) => (),
                 Err(err) => {
                     self.slave_select.set_low().unwrap();
@@ -339,7 +411,7 @@ pub mod spi {
         pub fn write_sfr(&mut self, address: SFRAddress, value: u32) -> Result<u32, T::Error> {
             self.ready_slave_select();
             let mut instruction: u16 = 0;
-            instruction |= (OpCodes::WriteSFR as u16) << 12;
+            instruction |= (OpCode::WriteSFR as u16) << 12;
             // Left and right shift address to ensure the last four bits are zero'd
             instruction |= address as u16;
             let ret = match self.send(&instruction.to_be_bytes()) {
