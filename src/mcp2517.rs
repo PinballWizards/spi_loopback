@@ -10,9 +10,9 @@ pub mod generic {
 
     pub struct OpCode;
     impl OpCode {
-        pub const Reset: u16 = 0b0000 << 12;
-        pub const ReadSFR: u16 = 0b0011 << 12;
-        pub const WriteSFR: u16 = 0b0010 << 12;
+        pub const RESET: u16 = 0b0000 << 12;
+        pub const READ_SFR: u16 = 0b0011 << 12;
+        pub const WRITE_SFR: u16 = 0b0010 << 12;
     }
 
     pub enum SFRAddress {
@@ -275,7 +275,7 @@ pub mod generic {
         C1MASK31 = 0x2EC,
     }
 
-    const MessageIdentifierMask: u16 = 0b0000_0111_1111_1111;
+    const MESSAGE_IDENTIFIER_MASK: u16 = 0b0000_0111_1111_1111;
     pub enum MessageIdentifier {
         Solenoid = 0x0,
     }
@@ -301,7 +301,7 @@ pub mod generic {
     impl TransmitMessageHeader<[u8; 2]> {
         pub fn new(identifier: MessageIdentifier) -> Self {
             let mut msg = TransmitMessageHeader([0; 2]);
-            msg.set_standard_identifier((identifier as u16) & MessageIdentifierMask);
+            msg.set_standard_identifier((identifier as u16) & MESSAGE_IDENTIFIER_MASK);
             msg
         }
     }
@@ -329,7 +329,7 @@ pub mod generic {
     impl ReceiveMessageHeader<[u8; 3]> {
         pub fn new(identifier: MessageIdentifier) -> Self {
             let mut msg = ReceiveMessageHeader([0; 3]);
-            msg.set_standard_identifier((identifier as u16) & MessageIdentifierMask);
+            msg.set_standard_identifier((identifier as u16) & MESSAGE_IDENTIFIER_MASK);
             msg
         }
     }
@@ -370,7 +370,7 @@ pub mod spi {
         pub fn reset(&mut self) -> Result<(), T::Error> {
             self.ready_slave_select();
 
-            let instruction = Instruction(OpCode::Reset);
+            let instruction = Instruction(OpCode::RESET);
             match self.send(&instruction.0.to_be_bytes()) {
                 Ok(_) => Ok(()),
                 Err(err) => {
@@ -382,7 +382,7 @@ pub mod spi {
 
         pub fn read_sfr(&mut self, address: SFRAddress) -> Result<u32, T::Error> {
             self.ready_slave_select();
-            let mut instruction = Instruction(OpCode::ReadSFR);
+            let mut instruction = Instruction(OpCode::READ_SFR);
             instruction.set_address(address as u16);
             match self.send(&instruction.0.to_be_bytes()) {
                 Ok(_) => (),
@@ -410,11 +410,9 @@ pub mod spi {
 
         pub fn write_sfr(&mut self, address: SFRAddress, value: u32) -> Result<u32, T::Error> {
             self.ready_slave_select();
-            let mut instruction: u16 = 0;
-            instruction |= (OpCode::WriteSFR as u16) << 12;
-            // Left and right shift address to ensure the last four bits are zero'd
-            instruction |= address as u16;
-            let ret = match self.send(&instruction.to_be_bytes()) {
+            let mut instruction = Instruction(OpCode::WRITE_SFR);
+            instruction.set_address(address as u16);
+            let ret = match self.send(&instruction.0.to_be_bytes()) {
                 Ok(_) => Ok(value),
                 Err(err) => Err(err),
             };
