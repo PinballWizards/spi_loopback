@@ -15,9 +15,9 @@ pub mod generic {
         pub const WRITE_SFR: u16 = 0b0010 << 12;
     }
 
-    pub enum SFRAddress {
-        OSC = 0xE00,
-        IOCON = 0xE04,
+    pub enum SFRAddress { 
+        OSC = 0xE00, 
+        IOCON = 0xE04, 
         CRC = 0xE08,
         ECCCON = 0xE0C,
         ECCSTAT = 0xE10,
