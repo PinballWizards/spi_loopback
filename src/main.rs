@@ -59,19 +59,17 @@ fn main() -> ! {
         &mut pins.port,
     );
 
-    let data = &[5];
-
-    let mut spi3_master = spi::SPI::new(raw_spi_master, d6);
-    // spi3_master.free();
+    //Create two MCP2517 objects within the same SPI lane having SS d6 and d7
+    //Configure both MCP2517 SPI objects
+    //  IOCON should allow interrupts to be sent out of INT0 (RX) and INT1 (TX)
+    //Define CAN messages within a vector for easy sending and comparing
+    //Start loop to send and recieve messages
+    //If unresolving loop is used, main function return type of Never (!)
+    //If for loop is used, main function returns a random ass integer
+    //  print out the value of the comparison, the sent message, and the recieved message as bit defined number
+    //      println!(Are_Same + " | " + sent_message.binary() + " : " + recieved_message.binary());
 
     loop {
         delay.delay_ms(1000u32);
-        spi3_master.send(data).unwrap();
-        let result = spi3_master.read().unwrap();
-        if result == 5 {
-            d13.set_low().unwrap();
-        } else {
-            d13.set_high().unwrap();
-        }
     }
 }
