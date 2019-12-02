@@ -63,9 +63,14 @@ fn main() -> ! {
     //Configure both MCP2517 SPI objects 
     //  -> All SFR are assumed to be default unless otherwise commented
     //  IOCON should allow interrupts to be sent out of INT0 (RX) and INT1 (TX)
-    //     IOCON -> 0x00000000
+    //      IOCON -> 0x00000000
     //  TODO:CAN SFR still need to be mapped out
-    //  
+    //  CiCON is changed to request CAN 2.0 operation AFTER all configuration has been done
+    //          If request successful, should read 0x06C80760
+    //      CiCON -> 0x06180760 
+    //
+    //
+    //
     //Define CAN messages within a vector for easy sending and comparing
     //Start loop to send and recieve messages
     //If unresolving loop is used, main function return type of Never (!)
