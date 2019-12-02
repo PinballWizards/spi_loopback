@@ -62,7 +62,7 @@ fn main() -> ! {
     //Create a new mcp2517 object and Set the slave select as d6
     let mut _spi_master = mcp2517::spi::Controller::new(raw_spi_master,d6);
 
-    //data[i] == GPIO are outputs with logic high
+    //data[i] == GPIO are outputs with logic high, refer to IOCON
     //data[0] == GPIO0 low && GPIO1 low
     //data[1] == GPIO0 low && GPIO1 high
     //data[2] == GPIO0 high && GPIO1 low
