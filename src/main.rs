@@ -59,19 +59,34 @@ fn main() -> ! {
         &mut pins.port,
     );
 
-    let data = &[5];
+    //Create a new mcp2517 object and Set the slave select as d6
+    let mut _spi_master = mcp2517::spi::Controller::new(raw_spi_master,d6);
 
-    let mut spi3_master = spi::SPI::new(raw_spi_master, d6);
-    // spi3_master.free();
+    //data[i] == GPIO are outputs with logic high
+    //data[0] == GPIO0 low && GPIO1 low
+    //data[1] == GPIO0 low && GPIO1 high
+    //data[2] == GPIO0 high && GPIO1 low
+    //data[3] == GPIO0 high && GPIO1 high
+    let data = [(0b00000011000000110000000000000000 as u32),
+                (0b00000011000000110000000100000000 as u32),
+                (0b00000011000000110000001000000000 as u32),
+                (0b00000011000000110000001100000000 as u32)];
+   
+    let mut _incrementer = 0;
 
+    //Start loop, change LED configuration every second
     loop {
+        //Delay for a second
         delay.delay_ms(1000u32);
-        spi3_master.send(data).unwrap();
-        let result = spi3_master.read().unwrap();
-        if result == 5 {
-            d13.set_low().unwrap();
+        //Send a new data packet
+        _spi_master.write_sfr(mcp2517::generic::SFRAddress::IOCON,data[_incrementer]).unwrap();
+        //cycle through the data packets
+        //Make the common case fast by allowing 
+        //  most loops to ignore the else
+        if _incrementer < 3 {
+            _incrementer += 1;
         } else {
-            d13.set_high().unwrap();
-        }
-    }
-}
+            _incrementer = 0;
+        } //end if
+    } //end loop
+} //end main()
