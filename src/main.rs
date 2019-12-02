@@ -60,8 +60,12 @@ fn main() -> ! {
     );
 
     //Create two MCP2517 objects within the same SPI lane having SS d6 and d7
-    //Configure both MCP2517 SPI objects
+    //Configure both MCP2517 SPI objects 
+    //  -> All SFR are assumed to be default unless otherwise commented
     //  IOCON should allow interrupts to be sent out of INT0 (RX) and INT1 (TX)
+    //     IOCON -> 0x00000000
+    //  TODO:CAN SFR still need to be mapped out
+    //  
     //Define CAN messages within a vector for easy sending and comparing
     //Start loop to send and recieve messages
     //If unresolving loop is used, main function return type of Never (!)
