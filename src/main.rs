@@ -10,16 +10,12 @@ extern crate panic_halt;
 #[macro_use(block)]
 extern crate nb;
 
-#[macro_use]
-extern crate bitfield;
-
 use hal::clock::GenericClockController;
 use hal::pac::{CorePeripherals, Peripherals};
 use hal::prelude::*;
 
 use hal::entry;
 
-pub mod mcp2517;
 mod spi;
 
 #[entry]
